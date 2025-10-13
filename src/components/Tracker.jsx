@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useGeolocation } from '../hooks/useGeolocation';
 import { useWakeLock } from '../hooks/useWakeLock';
 import { findNearestStation, haversineDistance } from '../utils/distance';
@@ -62,6 +62,8 @@ function Tracker({ stations, lines, journey, preferences, onCancel, onComplete }
   const completeRef = useRef(false);
   const offlineSimulatedRef = useRef(false);
   const offlineTimeoutRef = useRef(null);
+  const lastAnnouncedStopRef = useRef(null);
+  const previousVoiceAnnouncementsRef = useRef(preferences?.voiceAnnouncements);
 
   useEffect(() => {
     previousNearestRef.current = null;
@@ -71,6 +73,7 @@ function Tracker({ stations, lines, journey, preferences, onCancel, onComplete }
     completeRef.current = false;
     offlineSimulatedRef.current = false;
     setAlertTriggered(false);
+    lastAnnouncedStopRef.current = null;
   }, [journey.startTime]);
 
   const currentNearest = useMemo(() => {
@@ -174,6 +177,124 @@ function Tracker({ stations, lines, journey, preferences, onCancel, onComplete }
     return Math.round(haversineDistance(current, destination) * 1000);
   }, [destinationStation, position]);
 
+  const speakStationAnnouncement = useCallback(
+    (nextStop) => {
+      if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
+        return;
+      }
+      const synthesis = window.speechSynthesis;
+      if (!preferences?.voiceAnnouncements) {
+        synthesis.cancel();
+        return;
+      }
+      if (!nextStop?.stop_name) {
+        return;
+      }
+
+      const customPack = preferences.voiceCustomPack || {};
+      const baseRate = Number(preferences.voiceRate) || 1;
+      const basePitch = Number(preferences.voicePitch) || 1;
+      const baseVolume = Number(preferences.voiceVolume) || 1;
+      const voices = synthesis.getVoices();
+
+      function defaultTemplateForLang(lang) {
+        if (lang && lang.startsWith('te')) {
+          return 'తర్వాతి స్టేషన్: {{name}}';
+        }
+        return 'Next station: {{name}}';
+      }
+
+      function resolveConfig(kind) {
+        if (kind === 'primary') {
+          return {
+            lang: customPack.primary?.lang || preferences.voicePrimaryLang || 'te-IN',
+            voiceURI: customPack.primary?.voiceURI || preferences.voicePrimaryVoice || '',
+            rate: customPack.primary?.rate || baseRate,
+            pitch: customPack.primary?.pitch || basePitch,
+            volume: customPack.primary?.volume || baseVolume,
+            template: customPack.primary?.template || defaultTemplateForLang(customPack.primary?.lang || preferences.voicePrimaryLang)
+          };
+        }
+        const hasSecondaryPreference =
+          Boolean(preferences.voiceSecondaryLang) || Boolean(customPack.secondary?.lang);
+        if (!hasSecondaryPreference) {
+          return null;
+        }
+        return {
+          lang: customPack.secondary?.lang || preferences.voiceSecondaryLang || 'en-IN',
+          voiceURI: customPack.secondary?.voiceURI || preferences.voiceSecondaryVoice || '',
+          rate: customPack.secondary?.rate || baseRate,
+          pitch: customPack.secondary?.pitch || basePitch,
+          volume: customPack.secondary?.volume || baseVolume,
+          template:
+            customPack.secondary?.template ||
+            defaultTemplateForLang(customPack.secondary?.lang || preferences.voiceSecondaryLang)
+        };
+      }
+
+      function resolveVoice({ lang, voiceURI }) {
+        if (voiceURI) {
+          const byURI = voices.find((voice) => voice.voiceURI === voiceURI);
+          if (byURI) {
+            return byURI;
+          }
+        }
+        if (lang) {
+          const exact = voices.find((voice) => voice.lang === lang);
+          if (exact) {
+            return exact;
+          }
+          const prefix = lang.split('-')[0];
+          const partial = voices.find((voice) => voice.lang.startsWith(prefix));
+          if (partial) {
+            return partial;
+          }
+        }
+        return undefined;
+      }
+
+      function createUtterance(config) {
+        if (!config) {
+          return null;
+        }
+        const phrase = String(config.template || 'Next station: {{name}}').replace(
+          '{{name}}',
+          nextStop.stop_name
+        );
+        const utterance = new SpeechSynthesisUtterance(phrase);
+        if (config.lang) {
+          utterance.lang = config.lang;
+        }
+        utterance.rate = Number(config.rate) || baseRate;
+        utterance.pitch = Number(config.pitch) || basePitch;
+        utterance.volume = Number(config.volume) || baseVolume;
+        const voice = resolveVoice(config);
+        if (voice) {
+          utterance.voice = voice;
+        }
+        return utterance;
+      }
+
+      const primaryConfig = resolveConfig('primary');
+      const secondaryConfig = resolveConfig('secondary');
+
+      synthesis.cancel();
+
+      const utterances = [createUtterance(primaryConfig), createUtterance(secondaryConfig)].filter(
+        Boolean
+      );
+
+      if (!utterances.length) {
+        return;
+      }
+
+      utterances.forEach((utterance) => {
+        synthesis.speak(utterance);
+      });
+    },
+    [preferences]
+  );
+
   useEffect(() => {
     let cancelled = false;
     async function loadHistoricalEta() {
@@ -238,6 +359,33 @@ function Tracker({ stations, lines, journey, preferences, onCancel, onComplete }
   }, [activeSegment, currentNearest, nextStation, previousStation]);
 
   useEffect(() => {
+    if (previousVoiceAnnouncementsRef.current !== preferences?.voiceAnnouncements) {
+      previousVoiceAnnouncementsRef.current = preferences?.voiceAnnouncements;
+      lastAnnouncedStopRef.current = null;
+      if (!preferences?.voiceAnnouncements && typeof window !== 'undefined' && 'speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+    }
+  }, [preferences?.voiceAnnouncements]);
+
+  useEffect(() => {
+    if (!preferences?.voiceAnnouncements) {
+      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+      return;
+    }
+    if (!nextStation?.stop_id) {
+      return;
+    }
+    if (lastAnnouncedStopRef.current === nextStation.stop_id) {
+      return;
+    }
+    lastAnnouncedStopRef.current = nextStation.stop_id;
+    speakStationAnnouncement(nextStation);
+  }, [nextStation, preferences, speakStationAnnouncement]);
+
+  useEffect(() => {
     if (!nextStation || !preferences?.alarmDistanceMeters) {
       return;
     }
@@ -267,6 +415,9 @@ function Tracker({ stations, lines, journey, preferences, onCancel, onComplete }
       alarmCleanupRef.current?.();
       stopAlarm();
       stopWatching();
+      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
     };
   }, [stopWatching]);
 

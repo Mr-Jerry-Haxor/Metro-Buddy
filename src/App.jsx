@@ -18,7 +18,16 @@ import { findRouteOptions } from './utils/routes';
 const DEFAULT_PREFERENCES = {
   alarmDistanceMeters: 500,
   notificationSound: 'sine',
-  theme: 'system'
+  theme: 'system',
+  voiceAnnouncements: false,
+  voicePrimaryLang: 'te-IN',
+  voiceSecondaryLang: 'en-IN',
+  voicePrimaryVoice: '',
+  voiceSecondaryVoice: '',
+  voiceRate: 1,
+  voicePitch: 1,
+  voiceVolume: 1,
+  voiceCustomPack: null
 };
 
 const TABS = {
@@ -71,7 +80,47 @@ function App() {
         DEFAULT_PREFERENCES.notificationSound
       );
       const theme = await getPreference('theme', DEFAULT_PREFERENCES.theme);
-      setPreferences({ alarmDistanceMeters, notificationSound, theme });
+      const voiceAnnouncements = await getPreference(
+        'voiceAnnouncements',
+        DEFAULT_PREFERENCES.voiceAnnouncements
+      );
+      const voicePrimaryLang = await getPreference(
+        'voicePrimaryLang',
+        DEFAULT_PREFERENCES.voicePrimaryLang
+      );
+      const voiceSecondaryLang = await getPreference(
+        'voiceSecondaryLang',
+        DEFAULT_PREFERENCES.voiceSecondaryLang
+      );
+      const voicePrimaryVoice = await getPreference(
+        'voicePrimaryVoice',
+        DEFAULT_PREFERENCES.voicePrimaryVoice
+      );
+      const voiceSecondaryVoice = await getPreference(
+        'voiceSecondaryVoice',
+        DEFAULT_PREFERENCES.voiceSecondaryVoice
+      );
+      const voiceRate = await getPreference('voiceRate', DEFAULT_PREFERENCES.voiceRate);
+      const voicePitch = await getPreference('voicePitch', DEFAULT_PREFERENCES.voicePitch);
+      const voiceVolume = await getPreference('voiceVolume', DEFAULT_PREFERENCES.voiceVolume);
+      const voiceCustomPack = await getPreference(
+        'voiceCustomPack',
+        DEFAULT_PREFERENCES.voiceCustomPack
+      );
+      setPreferences({
+        alarmDistanceMeters,
+        notificationSound,
+        theme,
+        voiceAnnouncements,
+        voicePrimaryLang,
+        voiceSecondaryLang,
+        voicePrimaryVoice,
+        voiceSecondaryVoice,
+        voiceRate,
+        voicePitch,
+        voiceVolume,
+        voiceCustomPack
+      });
     }
     hydratePreferences();
   }, []);

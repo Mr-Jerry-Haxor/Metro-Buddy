@@ -419,6 +419,66 @@ input[type='number']:focus {
   margin-left: 0.25rem;
 }
 
+.toggle-field {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+}
+
+.toggle-field input[type='checkbox'] {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.inline-inputs {
+  display: grid;
+  gap: 1rem;
+}
+
+@media (min-width: 680px) {
+  .inline-inputs {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.inline-inputs input[type='range'] {
+  width: 100%;
+}
+
+.custom-pack-preview {
+  background: rgba(26, 115, 232, 0.08);
+  border-radius: 16px;
+  padding: 0.75rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.custom-pack-preview pre {
+  margin: 0;
+  max-height: 200px;
+  overflow: auto;
+  background: rgba(255, 255, 255, 0.6);
+  padding: 0.5rem;
+  border-radius: 12px;
+  font-size: 0.85rem;
+}
+
+.link-button {
+  align-self: flex-start;
+  border: none;
+  background: none;
+  color: var(--color-primary);
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+}
+
+.link-button:hover {
+  text-decoration: underline;
+}
+
 .route-plan {
   display: flex;
   flex-direction: column;
@@ -533,4 +593,12 @@ input[type='number']:focus {
 
 .dark-theme .route-plan-meta {
   color: #9aa9c1;
+}
+
+.dark-theme .custom-pack-preview {
+  background: rgba(59, 130, 246, 0.18);
+}
+
+.dark-theme .custom-pack-preview pre {
+  background: rgba(17, 26, 48, 0.7);
 }
