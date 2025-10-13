@@ -1,11 +1,11 @@
-const STATIC_CACHE = 'metro-static-v1';
-const DATA_CACHE = 'metro-data-v1';
+const STATIC_CACHE = 'metro-static-v2';
+const DATA_CACHE = 'metro-data-v2';
 const PRECACHE_URLS = [
-  '/',
-  '/index.html',
-  '/manifest.json',
-  '/assets/hyderabad_metro_stations.json',
-  '/assets/metro_lines.json'
+  './',
+  './index.html',
+  './manifest.json',
+  './assets/hyderabad_metro_stations.json',
+  './assets/metro_lines.json'
 ];
 
 self.addEventListener('install', (event) => {
@@ -41,27 +41,21 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  if (PRECACHE_URLS.some((url) => request.url.endsWith(url))) {
-    event.respondWith(caches.match(request));
-    return;
-  }
-
   event.respondWith(
     caches.match(request).then((cachedResponse) => {
-      const fetchPromise = fetch(request)
+      const networkFetch = fetch(request)
         .then((networkResponse) => {
-          if (!networkResponse || networkResponse.status !== 200 || networkResponse.type !== 'basic') {
-            return networkResponse;
+          if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
+            const responseToCache = networkResponse.clone();
+            caches.open(DATA_CACHE).then((cache) => {
+              cache.put(request, responseToCache).catch(() => {});
+            });
           }
-          const responseToCache = networkResponse.clone();
-          caches.open(DATA_CACHE).then((cache) => {
-            cache.put(request, responseToCache);
-          });
           return networkResponse;
         })
         .catch(() => cachedResponse);
 
-      return cachedResponse || fetchPromise;
+      return cachedResponse || networkFetch;
     })
   );
 });

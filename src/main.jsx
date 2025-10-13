@@ -14,7 +14,7 @@ ReactDOM.createRoot(root).render(
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker
-      .register('/service-worker.js')
+      .register(`${import.meta.env.BASE_URL}service-worker.js`)
       .then((registration) => {
         if (registration.waiting) {
           registration.waiting.postMessage('skipWaiting');

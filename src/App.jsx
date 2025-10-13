@@ -43,11 +43,11 @@ function App() {
   useEffect(() => {
     async function hydrateStations() {
       try {
-        const response = await fetch('/assets/hyderabad_metro_stations.json');
+        const response = await fetch(`${import.meta.env.BASE_URL}assets/hyderabad_metro_stations.json`);
         const data = await response.json();
         setStations(data);
         await bulkUpsertStations(data);
-        const lineResponse = await fetch('/assets/metro_lines.json');
+        const lineResponse = await fetch(`${import.meta.env.BASE_URL}assets/metro_lines.json`);
         const lineData = await lineResponse.json();
         setLines(lineData);
       } catch (error) {
