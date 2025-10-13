@@ -88,8 +88,100 @@
   {
     "route_id": "RED",
     "direction_id": "0",
-    "trip_id": "SA_103533",
+    "trip_id": "SA_103541",
     "stations": [
+      {
+        "stop_id": "MYP",
+        "stop_name": "Miyapur"
+      },
+      {
+        "stop_id": "JNT",
+        "stop_name": "JNTU College"
+      },
+      {
+        "stop_id": "KPH",
+        "stop_name": "KPHB Colony"
+      },
+      {
+        "stop_id": "KUK",
+        "stop_name": "Kukatpally"
+      },
+      {
+        "stop_id": "BLR",
+        "stop_name": "Balanagar"
+      },
+      {
+        "stop_id": "MSP",
+        "stop_name": "Moosapet"
+      },
+      {
+        "stop_id": "BTN",
+        "stop_name": "Bharat Nagar"
+      },
+      {
+        "stop_id": "ERA",
+        "stop_name": "Erragadda"
+      },
+      {
+        "stop_id": "ESI",
+        "stop_name": "ESI Hospital"
+      },
+      {
+        "stop_id": "SRN",
+        "stop_name": "S. R. Nagar"
+      },
+      {
+        "stop_id": "AME",
+        "stop_name": "Ameerpet"
+      },
+      {
+        "stop_id": "PUN",
+        "stop_name": "Panjagutta"
+      },
+      {
+        "stop_id": "IRM",
+        "stop_name": "Erra Manzil"
+      },
+      {
+        "stop_id": "KHA",
+        "stop_name": "Khairatabad"
+      },
+      {
+        "stop_id": "LKP",
+        "stop_name": "Lakdi-ka-pul"
+      },
+      {
+        "stop_id": "ASM",
+        "stop_name": "Assembly"
+      },
+      {
+        "stop_id": "NAM",
+        "stop_name": "Nampally"
+      },
+      {
+        "stop_id": "GAB",
+        "stop_name": "Gandhi Bhavan"
+      },
+      {
+        "stop_id": "OMC",
+        "stop_name": "Osmania Medical College"
+      },
+      {
+        "stop_id": "MGB",
+        "stop_name": "Mahatma Gandhi Bus Station"
+      },
+      {
+        "stop_id": "MKL",
+        "stop_name": "Malakpet"
+      },
+      {
+        "stop_id": "NEM",
+        "stop_name": "New Market"
+      },
+      {
+        "stop_id": "MSB",
+        "stop_name": "Musarambagh"
+      },
       {
         "stop_id": "DSN",
         "stop_name": "Dilsukh Nagar"
@@ -226,8 +318,28 @@
   {
     "route_id": "BLUE",
     "direction_id": "1",
-    "trip_id": "SA_115739",
+    "trip_id": "SA_115743",
     "stations": [
+      {
+        "stop_id": "RDG",
+        "stop_name": "Raidurg"
+      },
+      {
+        "stop_id": "HTC",
+        "stop_name": "HITEC City"
+      },
+      {
+        "stop_id": "DGC",
+        "stop_name": "Durgam Cheruvu"
+      },
+      {
+        "stop_id": "MAD",
+        "stop_name": "Madhapur"
+      },
+      {
+        "stop_id": "PED",
+        "stop_name": "Peddamma Gudi"
+      },
       {
         "stop_id": "JCP",
         "stop_name": "Jubilee Hills Checkpost"
@@ -305,8 +417,84 @@
   {
     "route_id": "BLUE",
     "direction_id": "0",
-    "trip_id": "SA_115742",
+    "trip_id": "SA_115752",
     "stations": [
+      {
+        "stop_id": "NAG",
+        "stop_name": "Nagole"
+      },
+      {
+        "stop_id": "UPL",
+        "stop_name": "Uppal"
+      },
+      {
+        "stop_id": "STD",
+        "stop_name": "Stadium"
+      },
+      {
+        "stop_id": "NGR",
+        "stop_name": "NGRI"
+      },
+      {
+        "stop_id": "HSG",
+        "stop_name": "Habsiguda"
+      },
+      {
+        "stop_id": "TAR",
+        "stop_name": "Tarnaka"
+      },
+      {
+        "stop_id": "MET",
+        "stop_name": "Mettuguda"
+      },
+      {
+        "stop_id": "SEC_E",
+        "stop_name": "Secunderabad East"
+      },
+      {
+        "stop_id": "PRG",
+        "stop_name": "Parade Ground"
+      },
+      {
+        "stop_id": "PAR",
+        "stop_name": "Paradise"
+      },
+      {
+        "stop_id": "ROP",
+        "stop_name": "Rasoolpura"
+      },
+      {
+        "stop_id": "PRN",
+        "stop_name": "Prakash Nagar"
+      },
+      {
+        "stop_id": "BEG",
+        "stop_name": "Begumpet"
+      },
+      {
+        "stop_id": "AME",
+        "stop_name": "Ameerpet"
+      },
+      {
+        "stop_id": "MUN",
+        "stop_name": "Madhura Nagar"
+      },
+      {
+        "stop_id": "YUG",
+        "stop_name": "Yusufguda"
+      },
+      {
+        "stop_id": "JR5",
+        "stop_name": "Road No 5 Jubilee Hills"
+      },
+      {
+        "stop_id": "JCP",
+        "stop_name": "Jubilee Hills Checkpost"
+      },
+      {
+        "stop_id": "PED",
+        "stop_name": "Peddamma Gudi"
+      },
       {
         "stop_id": "MAD",
         "stop_name": "Madhapur"

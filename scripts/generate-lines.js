@@ -30,7 +30,7 @@ function readCsv(filePath) {
 }
 
 const baseDir = path.resolve('d:/GITHUB/Metro-Buddy/GTFS_DATA');
-const outputFile = path.resolve('d:/GITHUB/Metro-Buddy/hyderabad-metro-smart-travel/public/assets/metro_lines.json');
+const outputFile = path.resolve('d:/GITHUB/Metro-Buddy/public/assets/metro_lines.json');
 
 const stops = readCsv(path.join(baseDir, 'stops.txt'));
 const trips = readCsv(path.join(baseDir, 'trips.txt'));
@@ -50,14 +50,6 @@ stops.forEach((stop) => {
   }
 });
 
-const tripsByRouteDirection = new Map();
-trips.forEach((trip) => {
-  const key = `${trip.route_id}|${trip.direction_id}`;
-  if (!tripsByRouteDirection.has(key)) {
-    tripsByRouteDirection.set(key, trip.trip_id);
-  }
-});
-
 const stopTimesByTrip = stopTimes.reduce((acc, record) => {
   if (!acc[record.trip_id]) {
     acc[record.trip_id] = [];
@@ -66,9 +58,20 @@ const stopTimesByTrip = stopTimes.reduce((acc, record) => {
   return acc;
 }, {});
 
+const tripsByRouteDirection = new Map();
+trips.forEach((trip) => {
+  const key = `${trip.route_id}|${trip.direction_id}`;
+  const candidateStops = stopTimesByTrip[trip.trip_id]?.length || 0;
+  const current = tripsByRouteDirection.get(key);
+  if (!current || candidateStops > current.stopCount) {
+    tripsByRouteDirection.set(key, { tripId: trip.trip_id, stopCount: candidateStops });
+  }
+});
+
 const lines = [];
 
-for (const [key, tripId] of tripsByRouteDirection.entries()) {
+for (const [key, entry] of tripsByRouteDirection.entries()) {
+  const tripId = entry.tripId;
   const [routeId, directionId] = key.split('|');
   const sequence = stopTimesByTrip[tripId];
   if (!sequence) {

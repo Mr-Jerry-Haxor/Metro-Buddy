@@ -8,9 +8,9 @@ self.addEventListener('message', (event) => {
   const { type, payload } = event.data || {};
 
   if (type === 'start') {
-    if (!self.navigator?.geolocation) {
-      postStatus('error', {
-        error: { code: 0, message: 'Geolocation is not supported in this context.' }
+    if (!self.navigator || !self.navigator.geolocation) {
+      postStatus('unsupported', {
+        error: { code: 0, message: 'Geolocation is not supported in this worker context.' }
       });
       return;
     }

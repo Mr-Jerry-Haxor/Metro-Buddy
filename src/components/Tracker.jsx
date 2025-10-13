@@ -3,6 +3,7 @@ import { useGeolocation } from '../hooks/useGeolocation';
 import { useWakeLock } from '../hooks/useWakeLock';
 import { findNearestStation, haversineDistance } from '../utils/distance';
 import { getHistoricalEtaMinutes, predictEtaFromDistance } from '../utils/eta';
+import { buildStationGraph, findShortestPath } from '../utils/graph';
 import {
   playAlarm,
   stopAlarm,
@@ -16,41 +17,32 @@ function Tracker({ stations, lines, journey, preferences, onCancel, onComplete }
     [stations]
   );
 
-  const route = useMemo(() => {
-    if (!lines?.length) {
-      return null;
-    }
-    const match = lines.find((line) => {
-      const ids = line.stations.map((station) => station.stop_id);
-      return ids.includes(journey.from) && ids.includes(journey.to);
-    });
-    if (!match) {
-      return null;
-    }
-    const ids = match.stations.map((station) => station.stop_id);
-    const fromIdx = ids.indexOf(journey.from);
-    const toIdx = ids.indexOf(journey.to);
-    if (fromIdx === -1 || toIdx === -1) {
-      return null;
-    }
-    const forward = fromIdx <= toIdx;
-    const ordered = forward
-      ? match.stations.slice(fromIdx, toIdx + 1)
-      : [...match.stations.slice(toIdx, fromIdx + 1)].reverse();
-    return {
-      ...match,
-      orderedStations: ordered
-    };
-  }, [journey.from, journey.to, lines]);
+  const hasPlannedPath = Array.isArray(journey?.path) && journey.path.length > 1;
 
-  const orderedStationDetails = useMemo(() => {
-    if (!route) {
+  const stationGraph = useMemo(() => {
+    if (hasPlannedPath) {
+      return null;
+    }
+    return buildStationGraph(lines);
+  }, [hasPlannedPath, lines]);
+
+  const pathStopIds = useMemo(() => {
+    if (hasPlannedPath) {
+      return journey.path;
+    }
+    if (!journey?.from || !journey?.to || !stationGraph) {
       return [];
     }
-    return route.orderedStations
-      .map((station) => stationById[station.stop_id])
-      .filter(Boolean);
-  }, [route, stationById]);
+    return findShortestPath(stationGraph, journey.from, journey.to);
+  }, [hasPlannedPath, journey.path, journey.from, journey.to, stationGraph]);
+
+  const orderedStationDetails = useMemo(() => {
+    return pathStopIds.map((stopId) => stationById[stopId]).filter(Boolean);
+  }, [pathStopIds, stationById]);
+
+  const pathIndexByStopId = useMemo(() => {
+    return new Map(pathStopIds.map((stopId, index) => [stopId, index]));
+  }, [pathStopIds]);
 
   const destinationStation = stationById[journey.to];
   const originStation = stationById[journey.from];
@@ -105,8 +97,67 @@ function Tracker({ stations, lines, journey, preferences, onCancel, onComplete }
       ? orderedStationDetails[nearestIndex + 1]
       : null;
 
-  const routeMissing = !route || !orderedStationDetails.length;
-  const totalStops = route?.orderedStations?.length ?? 0;
+  const routeMissing = orderedStationDetails.length <= 1;
+  const calculatedStopsBetween = orderedStationDetails.length > 0 ? orderedStationDetails.length - 1 : 0;
+  const stopsBetween = journey.plannedStops ?? calculatedStopsBetween;
+  const remainingStops = nearestIndex >= 0 ? Math.max(stopsBetween - nearestIndex, 0) : stopsBetween;
+  const plannedDistanceKm = journey.plannedDistanceKm ?? null;
+  const plannedSegments = journey.plannedSegments ?? [];
+  const plannedTransfers = journey.plannedTransfers ?? [];
+  const transfersRemaining = useMemo(() => {
+    if (!plannedTransfers.length) {
+      return 0;
+    }
+    const currentIndex = nearestIndex >= 0 ? nearestIndex : -1;
+    return plannedTransfers.filter((transfer) => {
+      const transferIndex = pathIndexByStopId.get(transfer.at);
+      return typeof transferIndex === 'number' && transferIndex > currentIndex;
+    }).length;
+  }, [nearestIndex, pathIndexByStopId, plannedTransfers]);
+
+  const activeSegmentIndex = useMemo(() => {
+    if (!plannedSegments.length) {
+      return -1;
+    }
+    const currentStopId = currentNearest?.station?.stop_id;
+    if (!currentStopId) {
+      return 0;
+    }
+    return plannedSegments.findIndex((segment) => segment.stopIds.includes(currentStopId));
+  }, [currentNearest, plannedSegments]);
+
+  const activeSegment = activeSegmentIndex >= 0 ? plannedSegments[activeSegmentIndex] : plannedSegments[0] ?? null;
+
+  const nextTransfer = useMemo(() => {
+    if (!plannedTransfers.length) {
+      return null;
+    }
+    const currentIndex = nearestIndex >= 0 ? nearestIndex : -1;
+    for (const transfer of plannedTransfers) {
+      const transferIndex = pathIndexByStopId.get(transfer.at);
+      if (typeof transferIndex === 'number' && transferIndex > currentIndex) {
+        return transfer;
+      }
+    }
+    return null;
+  }, [nearestIndex, pathIndexByStopId, plannedTransfers]);
+
+  const friendlyErrorMessage = useMemo(() => {
+    if (!error) {
+      return null;
+    }
+    if (typeof error.code === 'number' && error.code === 1) {
+      return 'Location permission denied. Please allow location access to enable live tracking.';
+    }
+    const message = String(error.message || '').toLowerCase();
+    if (message.includes('secure') || message.includes('https')) {
+      return 'Location requires a secure context. Serve the app via https or localhost (npm run dev / npx serve docs).';
+    }
+    if (message.includes('not supported')) {
+      return 'Geolocation is unavailable in this browser session. Try a modern browser or enable HTTPS.';
+    }
+    return error.message || 'Geolocation error occurred.';
+  }, [error]);
 
   const distanceToDestinationMeters = useMemo(() => {
     if (!position || !destinationStation) {
@@ -180,8 +231,11 @@ function Tracker({ stations, lines, journey, preferences, onCancel, onComplete }
     if (nextStation) {
       bodyParts.push(`🟥 Next: ${nextStation.stop_name}`);
     }
+    if (activeSegment?.routeLabel) {
+      bodyParts.push(`🚇 Line: ${activeSegment.routeLabel}`);
+    }
     updatePersistentNotification({ title, body: bodyParts.join('\n') });
-  }, [currentNearest, nextStation, previousStation]);
+  }, [activeSegment, currentNearest, nextStation, previousStation]);
 
   useEffect(() => {
     if (!nextStation || !preferences?.alarmDistanceMeters) {
@@ -240,10 +294,14 @@ function Tracker({ stations, lines, journey, preferences, onCancel, onComplete }
         startTime: journey.startTime,
         endTime,
         duration: durationMinutes,
-        distance: Number(distanceTravelledKmRef.current.toFixed(2))
+        distance: Number(distanceTravelledKmRef.current.toFixed(2)),
+        plannedStops: journey.plannedStops ?? null,
+        plannedDistance: journey.plannedDistanceKm ?? null,
+        transfers: plannedTransfers.length,
+        path: pathStopIds
       });
     }
-  }, [currentNearest, destinationStation, distanceToDestinationMeters, journey.startTime, journey.to, onComplete]);
+  }, [currentNearest, destinationStation, distanceToDestinationMeters, journey.plannedDistanceKm, journey.plannedStops, journey.startTime, journey.to, onComplete, pathStopIds, plannedTransfers.length]);
 
   useEffect(() => {
     if (!position && !offlineSimulatedRef.current && etaMinutes) {
@@ -259,7 +317,11 @@ function Tracker({ stations, lines, journey, preferences, onCancel, onComplete }
             endTime,
             duration: etaMinutes,
             distance: Number(distanceTravelledKmRef.current.toFixed(2)),
-            simulated: true
+            simulated: true,
+            plannedStops: journey.plannedStops ?? null,
+            plannedDistance: journey.plannedDistanceKm ?? null,
+            transfers: plannedTransfers.length,
+            path: pathStopIds
           });
         }
       }, durationMs);
@@ -284,7 +346,16 @@ function Tracker({ stations, lines, journey, preferences, onCancel, onComplete }
       </div>
 
       <div className="pill-row">
-        <span className="pill">Stops: {totalStops || '—'}</span>
+        <span className="pill">
+          Planned stops: {Number.isFinite(stopsBetween) ? stopsBetween : '—'}
+        </span>
+        <span className="pill">
+          Remaining stops: {Number.isFinite(remainingStops) ? remainingStops : '—'}
+        </span>
+        <span className="pill">
+          Transfers: {plannedTransfers.length ? `${transfersRemaining} of ${plannedTransfers.length} left` : 'None'}
+        </span>
+        {plannedDistanceKm != null && <span className="pill">Route distance: {plannedDistanceKm.toFixed(2)} km</span>}
         {etaMinutes && <span className="pill">Avg ETA: {Math.round(etaMinutes)} min</span>}
         {predictedMinutes && <span className="pill">Live ETA: {predictedMinutes} min</span>}
       </div>
@@ -295,7 +366,23 @@ function Tracker({ stations, lines, journey, preferences, onCancel, onComplete }
         </div>
       )}
 
-      {error && <div className="status-banner error">Geolocation error: {error.message}</div>}
+      {friendlyErrorMessage && <div className="status-banner error">{friendlyErrorMessage}</div>}
+
+      {(activeSegment || nextTransfer) && (
+        <div className="status-banner info">
+          {activeSegment && (
+            <span>
+              Stay on {activeSegment.routeLabel} towards {activeSegment.toName}
+            </span>
+          )}
+          {nextTransfer && (
+            <span>
+              Next transfer at <strong>{nextTransfer.atName}</strong> ({nextTransfer.fromRouteLabel} →{' '}
+              {nextTransfer.toRouteLabel})
+            </span>
+          )}
+        </div>
+      )}
 
       <div className="metrics-grid">
         <div className="metric-card">
@@ -305,6 +392,14 @@ function Tracker({ stations, lines, journey, preferences, onCancel, onComplete }
         <div className="metric-card">
           <h4>Next stop</h4>
           <p>{nextStation?.stop_name ?? '—'}</p>
+        </div>
+        <div className="metric-card">
+          <h4>Stops remaining</h4>
+          <p>{remainingStops ?? '—'}</p>
+        </div>
+        <div className="metric-card">
+          <h4>Transfers left</h4>
+          <p>{plannedTransfers.length ? transfersRemaining : 0}</p>
         </div>
         <div className="metric-card">
           <h4>Distance to destination</h4>
@@ -325,10 +420,37 @@ function Tracker({ stations, lines, journey, preferences, onCancel, onComplete }
           <p>{distanceDisplayKm.toFixed(2)} km</p>
         </div>
         <div className="metric-card">
+          <h4>Active line</h4>
+          <p>{activeSegment?.routeLabel ?? '—'}</p>
+        </div>
+        <div className="metric-card">
           <h4>GPS status</h4>
           <p>{isWatching ? 'Tracking' : 'Paused'}</p>
         </div>
       </div>
+
+      {plannedSegments.length ? (
+        <div className="route-plan">
+          <h3>Route plan</h3>
+          <ol className="route-plan-list">
+            {plannedSegments.map((segment, index) => {
+              const stopCount = Math.max(segment.stopIds.length - 1, 0);
+              const isCurrent = index === activeSegmentIndex;
+              return (
+                <li key={`${segment.route}-${segment.from}-${segment.to}-${index}`} className={isCurrent ? 'current' : ''}>
+                  <div className="route-plan-line">{segment.routeLabel}</div>
+                  <div className="route-plan-details">
+                    {segment.fromName} → {segment.toName}
+                  </div>
+                  <div className="route-plan-meta">
+                    {stopCount} {stopCount === 1 ? 'stop' : 'stops'}
+                  </div>
+                </li>
+              );
+            })}
+          </ol>
+        </div>
+      ) : null}
 
       <button type="button" className="action-button" onClick={onCancel}>
         End Journey

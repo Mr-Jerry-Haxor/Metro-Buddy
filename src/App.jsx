@@ -13,6 +13,7 @@ import {
   requestNotificationPermission,
   showPersistentNotification
 } from './services/notifications';
+import { findRouteOptions } from './utils/routes';
 
 const DEFAULT_PREFERENCES = {
   alarmDistanceMeters: 500,
@@ -39,6 +40,8 @@ function App() {
   );
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
   const [historyVersion, setHistoryVersion] = useState(0);
+  const [routeOptions, setRouteOptions] = useState([]);
+  const [selectedRouteIndex, setSelectedRouteIndex] = useState(0);
 
   useEffect(() => {
     async function hydrateStations() {
@@ -74,6 +77,24 @@ function App() {
   }, []);
 
   useEffect(() => {
+    if (!stations.length || !lines.length || !fromStation || !toStation || fromStation === toStation) {
+      setRouteOptions([]);
+      setSelectedRouteIndex(0);
+      return;
+    }
+
+    try {
+      const options = findRouteOptions(lines, stations, fromStation, toStation, 4);
+      setRouteOptions(options);
+      setSelectedRouteIndex(0);
+    } catch (error) {
+      console.error('Failed to compute route options', error);
+      setRouteOptions([]);
+      setSelectedRouteIndex(0);
+    }
+  }, [stations, lines, fromStation, toStation]);
+
+  useEffect(() => {
     function syncNetworkStatus() {
       setIsOffline(!navigator.onLine);
     }
@@ -96,8 +117,15 @@ function App() {
   }, [preferences.theme]);
 
   const canStartJourney = useMemo(
-    () => Boolean(fromStation && toStation && fromStation !== toStation),
-    [fromStation, toStation]
+    () =>
+      Boolean(
+        fromStation &&
+          toStation &&
+          fromStation !== toStation &&
+          routeOptions.length &&
+          routeOptions[selectedRouteIndex]
+      ),
+    [fromStation, toStation, routeOptions, selectedRouteIndex]
   );
 
   async function onStartJourney() {
@@ -107,10 +135,19 @@ function App() {
     const permission = await requestNotificationPermission();
     setNotificationPermission(permission);
     const now = new Date().toISOString();
+    const selectedRoute = routeOptions[selectedRouteIndex];
+    if (!selectedRoute) {
+      return;
+    }
     const journey = {
       from: fromStation,
       to: toStation,
-      startTime: now
+      startTime: now,
+      path: selectedRoute.path,
+      plannedDistanceKm: selectedRoute.distanceKm,
+      plannedStops: selectedRoute.stopsCount,
+      plannedSegments: selectedRoute.segments,
+      plannedTransfers: selectedRoute.transfers
     };
     setJourneyState(journey);
     setActiveTab(TABS.JOURNEY);
@@ -184,6 +221,9 @@ function App() {
               canStart={canStartJourney}
               onStart={onStartJourney}
               notificationPermission={notificationPermission}
+              routeOptions={routeOptions}
+              selectedRouteIndex={selectedRouteIndex}
+              onSelectRoute={setSelectedRouteIndex}
             />
             {journeyState && (
               <Tracker
