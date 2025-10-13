@@ -1,0 +1,328 @@
+[
+  {
+    "route_id": "GREEN",
+    "direction_id": "0",
+    "trip_id": "SA_101482",
+    "stations": [
+      {
+        "stop_id": "MGB",
+        "stop_name": "Mahatma Gandhi Bus Station"
+      },
+      {
+        "stop_id": "SUB",
+        "stop_name": "Sultan Bazar"
+      },
+      {
+        "stop_id": "NAR",
+        "stop_name": "Narayanaguda"
+      },
+      {
+        "stop_id": "CDP",
+        "stop_name": "Chikkadpally"
+      },
+      {
+        "stop_id": "RTC",
+        "stop_name": "RTC Cross Roads"
+      },
+      {
+        "stop_id": "MSH",
+        "stop_name": "Musheerabad"
+      },
+      {
+        "stop_id": "GNH",
+        "stop_name": "Gandhi Hospital"
+      },
+      {
+        "stop_id": "SCR",
+        "stop_name": "Secunderabad West"
+      },
+      {
+        "stop_id": "JBS",
+        "stop_name": "JBS Parade Ground"
+      }
+    ]
+  },
+  {
+    "route_id": "GREEN",
+    "direction_id": "1",
+    "trip_id": "SA_101483",
+    "stations": [
+      {
+        "stop_id": "JBS",
+        "stop_name": "JBS Parade Ground"
+      },
+      {
+        "stop_id": "SCR",
+        "stop_name": "Secunderabad West"
+      },
+      {
+        "stop_id": "GNH",
+        "stop_name": "Gandhi Hospital"
+      },
+      {
+        "stop_id": "MSH",
+        "stop_name": "Musheerabad"
+      },
+      {
+        "stop_id": "RTC",
+        "stop_name": "RTC Cross Roads"
+      },
+      {
+        "stop_id": "CDP",
+        "stop_name": "Chikkadpally"
+      },
+      {
+        "stop_id": "NAR",
+        "stop_name": "Narayanaguda"
+      },
+      {
+        "stop_id": "SUB",
+        "stop_name": "Sultan Bazar"
+      },
+      {
+        "stop_id": "MGB",
+        "stop_name": "Mahatma Gandhi Bus Station"
+      }
+    ]
+  },
+  {
+    "route_id": "RED",
+    "direction_id": "0",
+    "trip_id": "SA_103533",
+    "stations": [
+      {
+        "stop_id": "DSN",
+        "stop_name": "Dilsukh Nagar"
+      },
+      {
+        "stop_id": "CHP",
+        "stop_name": "Chaitanyapuri"
+      },
+      {
+        "stop_id": "VOM",
+        "stop_name": "Victoria Memorial"
+      },
+      {
+        "stop_id": "LBN",
+        "stop_name": "L. B. Nagar"
+      }
+    ]
+  },
+  {
+    "route_id": "RED",
+    "direction_id": "1",
+    "trip_id": "SA_103542",
+    "stations": [
+      {
+        "stop_id": "LBN",
+        "stop_name": "L. B. Nagar"
+      },
+      {
+        "stop_id": "VOM",
+        "stop_name": "Victoria Memorial"
+      },
+      {
+        "stop_id": "CHP",
+        "stop_name": "Chaitanyapuri"
+      },
+      {
+        "stop_id": "DSN",
+        "stop_name": "Dilsukh Nagar"
+      },
+      {
+        "stop_id": "MSB",
+        "stop_name": "Musarambagh"
+      },
+      {
+        "stop_id": "NEM",
+        "stop_name": "New Market"
+      },
+      {
+        "stop_id": "MKL",
+        "stop_name": "Malakpet"
+      },
+      {
+        "stop_id": "MGB",
+        "stop_name": "Mahatma Gandhi Bus Station"
+      },
+      {
+        "stop_id": "OMC",
+        "stop_name": "Osmania Medical College"
+      },
+      {
+        "stop_id": "GAB",
+        "stop_name": "Gandhi Bhavan"
+      },
+      {
+        "stop_id": "NAM",
+        "stop_name": "Nampally"
+      },
+      {
+        "stop_id": "ASM",
+        "stop_name": "Assembly"
+      },
+      {
+        "stop_id": "LKP",
+        "stop_name": "Lakdi-ka-pul"
+      },
+      {
+        "stop_id": "KHA",
+        "stop_name": "Khairatabad"
+      },
+      {
+        "stop_id": "IRM",
+        "stop_name": "Erra Manzil"
+      },
+      {
+        "stop_id": "PUN",
+        "stop_name": "Panjagutta"
+      },
+      {
+        "stop_id": "AME",
+        "stop_name": "Ameerpet"
+      },
+      {
+        "stop_id": "SRN",
+        "stop_name": "S. R. Nagar"
+      },
+      {
+        "stop_id": "ESI",
+        "stop_name": "ESI Hospital"
+      },
+      {
+        "stop_id": "ERA",
+        "stop_name": "Erragadda"
+      },
+      {
+        "stop_id": "BTN",
+        "stop_name": "Bharat Nagar"
+      },
+      {
+        "stop_id": "MSP",
+        "stop_name": "Moosapet"
+      },
+      {
+        "stop_id": "BLR",
+        "stop_name": "Balanagar"
+      },
+      {
+        "stop_id": "KUK",
+        "stop_name": "Kukatpally"
+      },
+      {
+        "stop_id": "KPH",
+        "stop_name": "KPHB Colony"
+      },
+      {
+        "stop_id": "JNT",
+        "stop_name": "JNTU College"
+      },
+      {
+        "stop_id": "MYP",
+        "stop_name": "Miyapur"
+      }
+    ]
+  },
+  {
+    "route_id": "BLUE",
+    "direction_id": "1",
+    "trip_id": "SA_115739",
+    "stations": [
+      {
+        "stop_id": "JCP",
+        "stop_name": "Jubilee Hills Checkpost"
+      },
+      {
+        "stop_id": "JR5",
+        "stop_name": "Road No 5 Jubilee Hills"
+      },
+      {
+        "stop_id": "YUG",
+        "stop_name": "Yusufguda"
+      },
+      {
+        "stop_id": "MUN",
+        "stop_name": "Madhura Nagar"
+      },
+      {
+        "stop_id": "AME",
+        "stop_name": "Ameerpet"
+      },
+      {
+        "stop_id": "BEG",
+        "stop_name": "Begumpet"
+      },
+      {
+        "stop_id": "PRN",
+        "stop_name": "Prakash Nagar"
+      },
+      {
+        "stop_id": "ROP",
+        "stop_name": "Rasoolpura"
+      },
+      {
+        "stop_id": "PAR",
+        "stop_name": "Paradise"
+      },
+      {
+        "stop_id": "PRG",
+        "stop_name": "Parade Ground"
+      },
+      {
+        "stop_id": "SEC_E",
+        "stop_name": "Secunderabad East"
+      },
+      {
+        "stop_id": "MET",
+        "stop_name": "Mettuguda"
+      },
+      {
+        "stop_id": "TAR",
+        "stop_name": "Tarnaka"
+      },
+      {
+        "stop_id": "HSG",
+        "stop_name": "Habsiguda"
+      },
+      {
+        "stop_id": "NGR",
+        "stop_name": "NGRI"
+      },
+      {
+        "stop_id": "STD",
+        "stop_name": "Stadium"
+      },
+      {
+        "stop_id": "UPL",
+        "stop_name": "Uppal"
+      },
+      {
+        "stop_id": "NAG",
+        "stop_name": "Nagole"
+      }
+    ]
+  },
+  {
+    "route_id": "BLUE",
+    "direction_id": "0",
+    "trip_id": "SA_115742",
+    "stations": [
+      {
+        "stop_id": "MAD",
+        "stop_name": "Madhapur"
+      },
+      {
+        "stop_id": "DGC",
+        "stop_name": "Durgam Cheruvu"
+      },
+      {
+        "stop_id": "HTC",
+        "stop_name": "HITEC City"
+      },
+      {
+        "stop_id": "RDG",
+        "stop_name": "Raidurg"
+      }
+    ]
+  }
+]
