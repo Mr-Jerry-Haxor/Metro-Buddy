@@ -1,5 +1,5 @@
-const STATIC_CACHE = 'metro-static-v2';
-const DATA_CACHE = 'metro-data-v2';
+const STATIC_CACHE = 'metro-static-v3';
+const DATA_CACHE = 'metro-data-v3';
 const PRECACHE_URLS = [
   './',
   './index.html',
@@ -38,6 +38,26 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   if (request.method !== 'GET') {
+    return;
+  }
+
+  const acceptHeader = request.headers.get('accept') || '';
+  const isNavigationRequest = request.mode === 'navigate' || acceptHeader.includes('text/html');
+
+  if (isNavigationRequest) {
+    event.respondWith(
+      fetch(request)
+        .then((networkResponse) => {
+          if (networkResponse && networkResponse.status === 200) {
+            const responseToCache = networkResponse.clone();
+            caches.open(STATIC_CACHE).then((cache) => {
+              cache.put(request, responseToCache).catch(() => {});
+            });
+          }
+          return networkResponse;
+        })
+        .catch(() => caches.match(request).then((cached) => cached || caches.match('./index.html')))
+    );
     return;
   }
 

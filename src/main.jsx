@@ -12,16 +12,22 @@ ReactDOM.createRoot(root).render(
 );
 
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker
-      .register(`${import.meta.env.BASE_URL}service-worker.js`)
-      .then((registration) => {
-        if (registration.waiting) {
-          registration.waiting.postMessage('skipWaiting');
-        }
-      })
-      .catch((error) => {
-        console.error('Service worker registration failed:', error);
-      });
-  });
+  if (import.meta.env.PROD) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker
+        .register(`${import.meta.env.BASE_URL}service-worker.js`)
+        .then((registration) => {
+          if (registration.waiting) {
+            registration.waiting.postMessage('skipWaiting');
+          }
+        })
+        .catch((error) => {
+          console.error('Service worker registration failed:', error);
+        });
+    });
+  } else {
+    navigator.serviceWorker.getRegistrations().then((registrations) => {
+      registrations.forEach((registration) => registration.unregister().catch(() => {}));
+    });
+  }
 }
