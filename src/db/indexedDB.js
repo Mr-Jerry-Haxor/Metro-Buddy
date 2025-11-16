@@ -8,6 +8,15 @@ db.version(1).stores({
   stations: '&stop_id,stop_name'
 });
 
+db.version(2).stores({
+  trips: '++id,from,to,startTime,endTime,duration',
+  preferences: '&key',
+  stations: '&stop_id,stop_name',
+  activeJourney: '&id'
+}).upgrade((tx) => {
+  return tx.table('activeJourney').clear();
+});
+
 export async function addTrip(trip) {
   return db.trips.add(trip);
 }
@@ -47,4 +56,16 @@ export async function getAverageDuration(from, to) {
   }
   const total = trips.reduce((sum, trip) => sum + trip.duration, 0);
   return total / trips.length;
+}
+
+export async function saveActiveJourney(journey) {
+  await db.activeJourney.put({ id: 'current', ...journey });
+}
+
+export async function getActiveJourney() {
+  return db.activeJourney.get('current');
+}
+
+export async function clearActiveJourney() {
+  await db.activeJourney.delete('current');
 }

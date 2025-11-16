@@ -10,6 +10,7 @@ import {
   triggerVibration,
   updatePersistentNotification
 } from '../services/notifications';
+import DynamicIsland from './DynamicIsland';
 
 function Tracker({ stations, lines, journey, preferences, onCancel, onComplete }) {
   const stationById = useMemo(
@@ -375,7 +376,15 @@ function Tracker({ stations, lines, journey, preferences, onCancel, onComplete }
       }
       return;
     }
-    if (!nextStation?.stop_id) {
+    if (!nextStation?.stop_id || !position) {
+      return;
+    }
+    const distanceToNext = haversineDistance(
+      { lat: position.coords.latitude, lon: position.coords.longitude },
+      { lat: nextStation.stop_lat, lon: nextStation.stop_lon }
+    );
+    const distanceToNextMeters = Math.round(distanceToNext * 1000);
+    if (distanceToNextMeters > 100) {
       return;
     }
     if (lastAnnouncedStopRef.current === nextStation.stop_id) {
@@ -383,7 +392,7 @@ function Tracker({ stations, lines, journey, preferences, onCancel, onComplete }
     }
     lastAnnouncedStopRef.current = nextStation.stop_id;
     speakStationAnnouncement(nextStation);
-  }, [nextStation, preferences, speakStationAnnouncement]);
+  }, [nextStation, position, preferences, speakStationAnnouncement]);
 
   useEffect(() => {
     if (!nextStation || !preferences?.alarmDistanceMeters) {
@@ -486,7 +495,16 @@ function Tracker({ stations, lines, journey, preferences, onCancel, onComplete }
   }, [etaMinutes, journey.from, journey.startTime, journey.to, onComplete, position]);
 
   return (
-    <section className="card">
+    <>
+      <DynamicIsland
+        journey={journey}
+        stations={stations}
+        position={position}
+        currentNearest={currentNearest}
+        nextStation={nextStation}
+        distanceToDestinationMeters={distanceToDestinationMeters}
+      />
+      <section className="card">
       <div>
         <h2>Live journey</h2>
         <p>
@@ -607,6 +625,7 @@ function Tracker({ stations, lines, journey, preferences, onCancel, onComplete }
         End Journey
       </button>
     </section>
+    </>
   );
 }
 

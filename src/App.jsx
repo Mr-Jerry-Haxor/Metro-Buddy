@@ -7,7 +7,10 @@ import {
   addTrip,
   bulkUpsertStations,
   getPreference,
-  savePreference
+  savePreference,
+  saveActiveJourney,
+  getActiveJourney,
+  clearActiveJourney
 } from './db/indexedDB';
 import {
   requestNotificationPermission,
@@ -62,6 +65,15 @@ function App() {
         const lineResponse = await fetch(`${import.meta.env.BASE_URL}assets/metro_lines.json`);
         const lineData = await lineResponse.json();
         setLines(lineData);
+        const savedJourney = await getActiveJourney();
+        if (savedJourney) {
+          setJourneyState(savedJourney);
+          setFromStation(savedJourney.from || '');
+          setToStation(savedJourney.to || '');
+          if (savedJourney.selectedRouteIndex != null) {
+            setSelectedRouteIndex(savedJourney.selectedRouteIndex);
+          }
+        }
       } catch (error) {
         console.error('Failed to hydrate station list', error);
       }
@@ -196,10 +208,12 @@ function App() {
       plannedDistanceKm: selectedRoute.distanceKm,
       plannedStops: selectedRoute.stopsCount,
       plannedSegments: selectedRoute.segments,
-      plannedTransfers: selectedRoute.transfers
+      plannedTransfers: selectedRoute.transfers,
+      selectedRouteIndex
     };
     setJourneyState(journey);
     setActiveTab(TABS.JOURNEY);
+    await saveActiveJourney(journey);
     await showPersistentNotification('Journey started', {
       body: `Journey started from ${fromStation} to ${toStation}`,
       data: { url: '/' }
@@ -208,6 +222,7 @@ function App() {
 
   async function handleTripCompletion(tripMetrics) {
     const id = await addTrip(tripMetrics);
+    await clearActiveJourney();
     setJourneyState(null);
     setActiveTab(TABS.HISTORY);
     setHistoryVersion((version) => version + 1);
@@ -221,6 +236,11 @@ function App() {
   async function updatePreference(key, value) {
     setPreferences((prev) => ({ ...prev, [key]: value }));
     await savePreference(key, value);
+  }
+
+  async function handleCancelJourney() {
+    await clearActiveJourney();
+    setJourneyState(null);
   }
 
   return (
@@ -280,7 +300,7 @@ function App() {
                 lines={lines}
                 journey={journeyState}
                 preferences={preferences}
-                onCancel={() => setJourneyState(null)}
+                onCancel={handleCancelJourney}
                 onComplete={handleTripCompletion}
               />
             )}
