@@ -1,40 +1,24 @@
 {
-  "name": "Hyderabad Metro Smart Travel Assistant",
+  "id": "./",
+  "name": "Metro Buddy — Hyderabad Metro Companion",
   "short_name": "Metro Buddy",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
   "orientation": "portrait-primary",
-  "background_color": "#ffffff",
-  "theme_color": "#1a73e8",
-  "description": "Offline-first PWA to track Hyderabad Metro journeys with real-time alerts and voice guidance in Telugu and English.",
+  "background_color": "#f4f7f5",
+  "theme_color": "#007abb",
+  "description": "Plan Hyderabad Metro rides, see official scheduled departures and fares, and follow live journey progress while you travel.",
   "categories": ["travel", "navigation", "utilities"],
   "icons": [
     {
-      "src": "./icons/icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png",
+      "src": "./icons/hmr-logo.jpeg",
+      "sizes": "1254x1254",
+      "type": "image/jpeg",
       "purpose": "any"
-    },
-    {
-      "src": "./icons/icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "maskable"
-    },
-    {
-      "src": "./icons/icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "./icons/icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "maskable"
     }
   ],
-  "screenshots": [],
+  "shortcuts": [{"name": "Plan a journey", "short_name": "New journey", "url": "./"}],
   "prefer_related_applications": false
 }

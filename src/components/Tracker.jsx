@@ -11,6 +11,7 @@ import {
   updatePersistentNotification
 } from '../services/notifications';
 import DynamicIsland from './DynamicIsland';
+import JourneyOverlay from './JourneyOverlay';
 
 function Tracker({ stations, lines, journey, preferences, onCancel, onComplete }) {
   const stationById = useMemo(
@@ -100,6 +101,8 @@ function Tracker({ stations, lines, journey, preferences, onCancel, onComplete }
     nearestIndex >= 0 && nearestIndex < orderedStationDetails.length - 1
       ? orderedStationDetails[nearestIndex + 1]
       : null;
+  const displayedCurrentStation = currentNearest?.station || originStation;
+  const displayedNextStation = nextStation || (nearestIndex < 0 ? orderedStationDetails[1] : null);
 
   const routeMissing = orderedStationDetails.length <= 1;
   const calculatedStopsBetween = orderedStationDetails.length > 0 ? orderedStationDetails.length - 1 : 0;
@@ -339,7 +342,7 @@ function Tracker({ stations, lines, journey, preferences, onCancel, onComplete }
   }, [currentNearest, position]);
 
   useEffect(() => {
-    if (!currentNearest?.station && !nextStation) {
+    if (!displayedCurrentStation && !displayedNextStation) {
       return;
     }
     const title = 'Metro tracker';
@@ -347,17 +350,17 @@ function Tracker({ stations, lines, journey, preferences, onCancel, onComplete }
     if (previousStation) {
       bodyParts.push(`🟩 Last stop: ${previousStation.stop_name}`);
     }
-    if (currentNearest?.station) {
-      bodyParts.push(`🟨 Current: ${currentNearest.station.stop_name}`);
+    if (displayedCurrentStation) {
+      bodyParts.push(`🟨 Current: ${displayedCurrentStation.stop_name}`);
     }
-    if (nextStation) {
-      bodyParts.push(`🟥 Next: ${nextStation.stop_name}`);
+    if (displayedNextStation) {
+      bodyParts.push(`🟥 Next: ${displayedNextStation.stop_name}`);
     }
     if (activeSegment?.routeLabel) {
       bodyParts.push(`🚇 Line: ${activeSegment.routeLabel}`);
     }
     updatePersistentNotification({ title, body: bodyParts.join('\n') });
-  }, [activeSegment, currentNearest, nextStation, previousStation]);
+  }, [activeSegment, displayedCurrentStation, displayedNextStation, previousStation]);
 
   useEffect(() => {
     if (previousVoiceAnnouncementsRef.current !== preferences?.voiceAnnouncements) {
@@ -503,16 +506,45 @@ function Tracker({ stations, lines, journey, preferences, onCancel, onComplete }
         currentNearest={currentNearest}
         nextStation={nextStation}
         distanceToDestinationMeters={distanceToDestinationMeters}
+        remainingStops={remainingStops}
       />
-      <section className="card">
-      <div>
-        <h2>Live journey</h2>
+      <section className="card tracker-card">
+      <div className="section-heading">
+        <div>
+          <p className="eyebrow">Now riding</p>
+          <h2>Live journey</h2>
+        </div>
+        <span className={`live-badge ${isWatching ? '' : 'is-paused'}`}>
+          <span /> {isWatching ? 'GPS live' : 'Finding GPS'}
+        </span>
         <p>
           Tracking from <strong>{originStation?.stop_name ?? journey.from}</strong> to{' '}
           <strong>{destinationStation?.stop_name ?? journey.to}</strong>. Relax, we will alert you in
           time.
         </p>
       </div>
+
+      <div className="journey-hero">
+        <div className="journey-hero-copy">
+          <span>Current station</span>
+          <strong>{displayedCurrentStation?.stop_name ?? 'Locating your train…'}</strong>
+        </div>
+        <div className="journey-arrow" aria-hidden="true">→</div>
+        <div className="journey-hero-copy journey-hero-copy--next">
+          <span>Up next</span>
+          <strong>{displayedNextStation?.stop_name ?? destinationStation?.stop_name ?? '—'}</strong>
+        </div>
+      </div>
+
+      <JourneyOverlay
+        currentStation={displayedCurrentStation}
+        nextStation={displayedNextStation}
+        destinationStation={destinationStation}
+        lineLabel={activeSegment?.routeLabel}
+        remainingStops={remainingStops}
+        etaMinutes={predictedMinutes || etaMinutes}
+        progress={stopsBetween ? Math.max(nearestIndex, 0) / stopsBetween : 0}
+      />
 
       <div className="pill-row">
         <span className="pill">
@@ -556,11 +588,11 @@ function Tracker({ stations, lines, journey, preferences, onCancel, onComplete }
       <div className="metrics-grid">
         <div className="metric-card">
           <h4>Current stop</h4>
-          <p>{currentNearest?.station?.stop_name ?? 'Locating...'}</p>
+          <p>{displayedCurrentStation?.stop_name ?? 'Locating…'}</p>
         </div>
         <div className="metric-card">
           <h4>Next stop</h4>
-          <p>{nextStation?.stop_name ?? '—'}</p>
+          <p>{displayedNextStation?.stop_name ?? '—'}</p>
         </div>
         <div className="metric-card">
           <h4>Stops remaining</h4>
@@ -621,7 +653,7 @@ function Tracker({ stations, lines, journey, preferences, onCancel, onComplete }
         </div>
       ) : null}
 
-      <button type="button" className="action-button" onClick={onCancel}>
+      <button type="button" className="secondary-button danger-button" onClick={onCancel}>
         End Journey
       </button>
     </section>

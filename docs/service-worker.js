@@ -1,11 +1,13 @@
-const STATIC_CACHE = 'metro-static-v3';
-const DATA_CACHE = 'metro-data-v3';
+const STATIC_CACHE = 'metro-static-v6';
+const DATA_CACHE = 'metro-data-v6';
 const PRECACHE_URLS = [
   './',
   './index.html',
   './manifest.json',
+  './icons/hmr-logo.jpeg',
   './assets/hyderabad_metro_stations.json',
-  './assets/metro_lines.json'
+  './assets/metro_lines.json',
+  './assets/metro_schedule.json'
 ];
 
 self.addEventListener('install', (event) => {
@@ -84,11 +86,12 @@ self.addEventListener('push', (event) => {
   const data = event.data?.json() ?? { title: 'Metro Update', body: 'You have a new travel update.' };
   const options = {
     body: data.body,
-    icon: '/icons/icon-192.png',
-    badge: '/icons/icon-192.png',
+    icon: './icons/hmr-logo.jpeg',
+    badge: './icons/hmr-logo.jpeg',
     vibrate: data.vibrate || [100, 50, 100],
     tag: data.tag || 'metro-tracker',
     renotify: true,
+    requireInteraction: true,
     data: data.payload || {}
   };
   event.waitUntil(self.registration.showNotification(data.title, options));
@@ -96,7 +99,7 @@ self.addEventListener('push', (event) => {
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  const destination = event.notification.data?.url || '/';
+  const destination = event.notification.data?.url || './';
   event.waitUntil(
     self.clients.matchAll({ type: 'window' }).then((clientList) => {
       for (const client of clientList) {

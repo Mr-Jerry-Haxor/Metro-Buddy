@@ -3,9 +3,11 @@ import StationSelector from './components/StationSelector';
 import Tracker from './components/Tracker';
 import TripHistory from './components/TripHistory';
 import Settings from './components/Settings';
+import TrainBoard from './components/TrainBoard';
 import {
   addTrip,
   bulkUpsertStations,
+  getStations,
   getPreference,
   savePreference,
   saveActiveJourney,
@@ -36,6 +38,7 @@ const DEFAULT_PREFERENCES = {
 const TABS = {
   JOURNEY: 'journey',
   HISTORY: 'history',
+  TRAINS: 'trains',
   SETTINGS: 'settings'
 };
 
@@ -44,6 +47,8 @@ function App() {
   const [fromStation, setFromStation] = useState('');
   const [toStation, setToStation] = useState('');
   const [lines, setLines] = useState([]);
+  const [schedule, setSchedule] = useState(null);
+  const [scheduleError, setScheduleError] = useState('');
   const [activeTab, setActiveTab] = useState(TABS.JOURNEY);
   const [journeyState, setJourneyState] = useState(null);
   const [preferences, setPreferences] = useState(DEFAULT_PREFERENCES);
@@ -54,6 +59,9 @@ function App() {
   const [historyVersion, setHistoryVersion] = useState(0);
   const [routeOptions, setRouteOptions] = useState([]);
   const [selectedRouteIndex, setSelectedRouteIndex] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
+  const [installPrompt, setInstallPrompt] = useState(null);
 
   useEffect(() => {
     async function hydrateStations() {
@@ -61,10 +69,22 @@ function App() {
         const response = await fetch(`${import.meta.env.BASE_URL}assets/hyderabad_metro_stations.json`);
         const data = await response.json();
         setStations(data);
+        setIsLoading(false);
         await bulkUpsertStations(data);
         const lineResponse = await fetch(`${import.meta.env.BASE_URL}assets/metro_lines.json`);
         const lineData = await lineResponse.json();
         setLines(lineData);
+        try {
+          const scheduleResponse = await fetch(`${import.meta.env.BASE_URL}assets/metro_schedule.json`);
+          if (!scheduleResponse.ok) {
+            throw new Error(`Schedule request failed with ${scheduleResponse.status}`);
+          }
+          setSchedule(await scheduleResponse.json());
+        } catch (timetableError) {
+          console.warn('Official timetable could not be loaded', timetableError);
+          setScheduleError('The official timetable is unavailable. Route planning and rider GPS tracking still work.');
+          setLoadError('Routes are ready, but the official train timetable is temporarily unavailable.');
+        }
         const savedJourney = await getActiveJourney();
         if (savedJourney) {
           setJourneyState(savedJourney);
@@ -76,9 +96,34 @@ function App() {
         }
       } catch (error) {
         console.error('Failed to hydrate station list', error);
+        const cachedStations = await getStations().catch(() => []);
+        if (cachedStations.length) {
+          setStations(cachedStations);
+          setLoadError('Route maps are offline. Saved stations are still available.');
+        } else {
+          setLoadError('Metro data could not be loaded. Check your connection and try again.');
+        }
+      } finally {
+        setIsLoading(false);
       }
     }
     hydrateStations();
+  }, []);
+
+  useEffect(() => {
+    function captureInstallPrompt(event) {
+      event.preventDefault();
+      setInstallPrompt(event);
+    }
+    function clearInstallPrompt() {
+      setInstallPrompt(null);
+    }
+    window.addEventListener('beforeinstallprompt', captureInstallPrompt);
+    window.addEventListener('appinstalled', clearInstallPrompt);
+    return () => {
+      window.removeEventListener('beforeinstallprompt', captureInstallPrompt);
+      window.removeEventListener('appinstalled', clearInstallPrompt);
+    };
   }, []);
 
   useEffect(() => {
@@ -168,14 +213,25 @@ function App() {
   }, []);
 
   useEffect(() => {
-    if (preferences.theme === 'dark') {
-      document.documentElement.classList.add('dark-theme');
-    } else if (preferences.theme === 'light') {
-      document.documentElement.classList.remove('dark-theme');
-    } else {
-      document.documentElement.classList.remove('dark-theme');
-    }
+    const media = window.matchMedia('(prefers-color-scheme: dark)');
+    const applyTheme = () => {
+      const shouldUseDark =
+        preferences.theme === 'dark' || (preferences.theme === 'system' && media.matches);
+      document.documentElement.classList.toggle('dark-theme', shouldUseDark);
+    };
+    applyTheme();
+    media.addEventListener?.('change', applyTheme);
+    return () => media.removeEventListener?.('change', applyTheme);
   }, [preferences.theme]);
+
+  async function installApp() {
+    if (!installPrompt) {
+      return;
+    }
+    await installPrompt.prompt();
+    await installPrompt.userChoice;
+    setInstallPrompt(null);
+  }
 
   const canStartJourney = useMemo(
     () =>
@@ -188,6 +244,13 @@ function App() {
       ),
     [fromStation, toStation, routeOptions, selectedRouteIndex]
   );
+
+  const selectedFare = useMemo(() => {
+    if (!fromStation || !toStation || !schedule?.fares) {
+      return null;
+    }
+    return schedule.fares[fromStation]?.[toStation] ?? schedule.fares[toStation]?.[fromStation] ?? null;
+  }, [fromStation, schedule, toStation]);
 
   async function onStartJourney() {
     if (!canStartJourney) {
@@ -246,13 +309,25 @@ function App() {
   return (
     <div className="app-container">
       <header className="app-header">
-        <span className="status-pill">
-          {isOffline ? '🔌 Offline ready' : '🟢 Live connection'}
-        </span>
-        <h1>Hyderabad Metro Smart Travel</h1>
-        <p>
-          Plan journeys, stay notified in real time, and keep a personal commute log on any device.
-        </p>
+        <div className="brand-lockup">
+          <img
+            className="brand-mark"
+            src={`${import.meta.env.BASE_URL}icons/hmr-logo.jpeg`}
+            alt="Hyderabad Metro Rail"
+          />
+          <div>
+            <p className="eyebrow">Hyderabad metro companion</p>
+            <h1>Metro Buddy</h1>
+          </div>
+        </div>
+        <div className="header-actions">
+          <span className={`status-pill ${isOffline ? 'is-offline' : ''}`}>
+            <span aria-hidden="true" /> <b>{isOffline ? 'Offline ready' : 'Connected'}</b>
+          </span>
+          {installPrompt && (
+            <button type="button" className="install-button" onClick={installApp}>Install app</button>
+          )}
+        </div>
       </header>
       <div className="main-shell">
         <nav className="tab-bar">
@@ -261,26 +336,34 @@ function App() {
             className={activeTab === TABS.JOURNEY ? 'active' : ''}
             onClick={() => setActiveTab(TABS.JOURNEY)}
           >
-            🚉 Journey
+            <span aria-hidden="true">⌁</span> Journey
+          </button>
+          <button
+            type="button"
+            className={activeTab === TABS.TRAINS ? 'active' : ''}
+            onClick={() => setActiveTab(TABS.TRAINS)}
+          >
+            <span aria-hidden="true">◉</span> Trains
           </button>
           <button
             type="button"
             className={activeTab === TABS.HISTORY ? 'active' : ''}
             onClick={() => setActiveTab(TABS.HISTORY)}
           >
-            🗂️ History
+            <span aria-hidden="true">↺</span> History
           </button>
           <button
             type="button"
             className={activeTab === TABS.SETTINGS ? 'active' : ''}
             onClick={() => setActiveTab(TABS.SETTINGS)}
           >
-            ⚙️ Settings
+            <span aria-hidden="true">⚙</span> Settings
           </button>
         </nav>
 
         {activeTab === TABS.JOURNEY && (
           <main className={journeyState ? 'content content--two-column' : 'content'}>
+            {loadError && <div className="status-banner warning page-banner">{loadError}</div>}
             <StationSelector
               stations={stations}
               fromStation={fromStation}
@@ -293,6 +376,8 @@ function App() {
               routeOptions={routeOptions}
               selectedRouteIndex={selectedRouteIndex}
               onSelectRoute={setSelectedRouteIndex}
+              isLoading={isLoading}
+              fare={selectedFare}
             />
             {journeyState && (
               <Tracker
@@ -309,8 +394,17 @@ function App() {
 
         {activeTab === TABS.HISTORY && (
           <main className="content">
-            <TripHistory version={historyVersion} />
+            <TripHistory version={historyVersion} stations={stations} />
           </main>
+        )}
+
+        {activeTab === TABS.TRAINS && (
+          <TrainBoard
+            schedule={schedule}
+            stations={stations}
+            initialStation={fromStation}
+            error={scheduleError}
+          />
         )}
 
         {activeTab === TABS.SETTINGS && (
@@ -319,6 +413,10 @@ function App() {
           </main>
         )}
       </div>
+      <footer className="app-footer">
+        <span>Metro Buddy</span>
+        <span>Private by design · Independent companion, not endorsed by HMRL</span>
+      </footer>
     </div>
   );
 }

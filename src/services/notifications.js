@@ -17,12 +17,14 @@ export async function showPersistentNotification(title, options = {}) {
   }
   const registration = await navigator.serviceWorker.ready;
   try {
+    const iconUrl = new URL('icons/hmr-logo.jpeg', registration.scope).href;
     await registration.showNotification(title, {
       tag: 'metro-tracker',
       renotify: true,
       silent: false,
-      icon: '/icons/icon-192.png',
-      badge: '/icons/icon-192.png',
+      icon: iconUrl,
+      badge: iconUrl,
+      requireInteraction: true,
       ...options
     });
   } catch (error) {

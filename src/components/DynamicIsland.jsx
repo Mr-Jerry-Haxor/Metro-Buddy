@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { haversineDistance } from '../utils/distance';
 
-function DynamicIsland({ journey, stations, position, currentNearest, nextStation, distanceToDestinationMeters }) {
+function DynamicIsland({ journey, stations, position, currentNearest, nextStation, distanceToDestinationMeters, remainingStops }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
 
@@ -21,6 +21,7 @@ function DynamicIsland({ journey, stations, position, currentNearest, nextStatio
   const stationById = stations.reduce((acc, station) => ({ ...acc, [station.stop_id]: station }), {});
   const destinationStation = stationById[journey.to];
   const originStation = stationById[journey.from];
+  const displayedCurrent = currentNearest?.station || originStation;
 
   const distanceToNextStation = nextStation && position
     ? Math.round(haversineDistance(
@@ -31,17 +32,17 @@ function DynamicIsland({ journey, stations, position, currentNearest, nextStatio
 
   return (
     <>
-      <div
+      <button
+        type="button"
         className={`dynamic-island ${isExpanded ? 'expanded' : ''}`}
         onClick={() => setIsExpanded(!isExpanded)}
-        role="button"
-        tabIndex={0}
-        onKeyDown={(e) => e.key === 'Enter' && setIsExpanded(!isExpanded)}
+        aria-expanded={isExpanded}
+        aria-label="Open compact journey status"
       >
         <div className="dynamic-island-compact">
           <div className="island-status-dot" />
           <span className="island-text">
-            {currentNearest?.station?.stop_name || 'Tracking...'}
+            {displayedCurrent?.stop_name || 'Tracking…'}
           </span>
           <span className="island-next">→ {destinationStation?.stop_name}</span>
         </div>
@@ -54,7 +55,7 @@ function DynamicIsland({ journey, stations, position, currentNearest, nextStatio
             </div>
             <div className="island-detail-row">
               <span className="island-label">Current</span>
-              <span className="island-value">{currentNearest?.station?.stop_name || '—'}</span>
+              <span className="island-value">{displayedCurrent?.stop_name || '—'}</span>
             </div>
             <div className="island-detail-row">
               <span className="island-label">Next</span>
@@ -72,9 +73,13 @@ function DynamicIsland({ journey, stations, position, currentNearest, nextStatio
                 <span className="island-value">{(distanceToDestinationMeters / 1000).toFixed(2)} km</span>
               </div>
             )}
+            <div className="island-detail-row">
+              <span className="island-label">Stops left</span>
+              <span className="island-value">{Number.isFinite(remainingStops) ? remainingStops : '—'}</span>
+            </div>
           </div>
         )}
-      </div>
+      </button>
       {isExpanded && <div className="dynamic-island-backdrop" onClick={() => setIsExpanded(false)} />}
     </>
   );

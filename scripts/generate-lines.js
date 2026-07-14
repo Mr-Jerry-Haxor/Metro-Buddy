@@ -29,8 +29,8 @@ function readCsv(filePath) {
   });
 }
 
-const baseDir = path.resolve('d:/GITHUB/Metro-Buddy/GTFS_DATA');
-const outputFile = path.resolve('d:/GITHUB/Metro-Buddy/public/assets/metro_lines.json');
+const baseDir = path.resolve('GTFS_DATA');
+const outputFile = path.resolve('public/assets/metro_lines.json');
 
 const stops = readCsv(path.join(baseDir, 'stops.txt'));
 const trips = readCsv(path.join(baseDir, 'trips.txt'));

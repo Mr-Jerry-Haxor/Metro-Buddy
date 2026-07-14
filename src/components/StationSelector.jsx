@@ -11,7 +11,9 @@ function StationSelector({
   notificationPermission,
   routeOptions,
   selectedRouteIndex,
-  onSelectRoute
+  onSelectRoute,
+  isLoading,
+  fare
 }) {
   const sortedStations = useMemo(
     () => [...stations].sort((a, b) => a.stop_name.localeCompare(b.stop_name)),
@@ -28,14 +30,26 @@ function StationSelector({
   const selectedTo = stationById[toStation];
   const notificationsEnabled = notificationPermission === 'granted';
 
+  function swapStations() {
+    onFromChange(toStation);
+    onToChange(fromStation);
+  }
+
   return (
-    <section className="card">
-      <div>
+    <section className="card planner-card">
+      <div className="planner-intro">
+        <div>
+          <p className="eyebrow">Plan a ride</p>
         <h2>Plan your journey</h2>
-        <p>Select your start and destination stations to unlock live metro guidance.</p>
+          <p>Choose your stations. We will map the line, transfers, alerts, and your live ride.</p>
+        </div>
+        <div className="planner-illustration" aria-hidden="true">
+          <span className="planner-line" />
+          <span className="planner-train">M</span>
+        </div>
       </div>
 
-      <div className="form-grid">
+      <div className="station-picker">
         <div className="form-field">
           <label htmlFor="from-select">From station</label>
           <select
@@ -43,7 +57,7 @@ function StationSelector({
             value={fromStation}
             onChange={(event) => onFromChange(event.target.value)}
           >
-            <option value="">Select origin</option>
+            <option value="">{isLoading ? 'Loading stations…' : 'Select origin'}</option>
             {sortedStations.map((station) => (
               <option key={station.stop_id} value={station.stop_id}>
                 {station.stop_name}
@@ -51,6 +65,16 @@ function StationSelector({
             ))}
           </select>
         </div>
+
+        <button
+          type="button"
+          className="swap-button"
+          onClick={swapStations}
+          disabled={!fromStation && !toStation}
+          aria-label="Swap origin and destination"
+        >
+          ⇄
+        </button>
 
         <div className="form-field">
           <label htmlFor="to-select">To station</label>
@@ -59,7 +83,7 @@ function StationSelector({
             value={toStation}
             onChange={(event) => onToChange(event.target.value)}
           >
-            <option value="">Select destination</option>
+            <option value="">{isLoading ? 'Loading stations…' : 'Select destination'}</option>
             {sortedStations.map((station) => (
               <option key={station.stop_id} value={station.stop_id}>
                 {station.stop_name}
@@ -69,13 +93,13 @@ function StationSelector({
         </div>
       </div>
 
-      <div className="pill-row">
-        {selectedFrom && <span className="pill">From: {selectedFrom.stop_name}</span>}
-        {selectedTo && <span className="pill">To: {selectedTo.stop_name}</span>}
-        <span className="pill">
-          Notifications: {notificationsEnabled ? 'Enabled' : 'Tap start to allow'}
-        </span>
-      </div>
+      {(selectedFrom || selectedTo) && (
+        <div className="selection-summary">
+          <span><i className="summary-dot summary-dot--from" />{selectedFrom?.stop_name || 'Choose origin'}</span>
+          <span aria-hidden="true">→</span>
+          <span><i className="summary-dot summary-dot--to" />{selectedTo?.stop_name || 'Choose destination'}</span>
+        </div>
+      )}
 
       {fromStation && toStation && fromStation !== toStation && (
         <div className="route-options">
@@ -90,10 +114,10 @@ function StationSelector({
                   onClick={() => onSelectRoute(index)}
                 >
                   <div className="route-option-header">
-                    <span className="route-option-title">Option {index + 1}</span>
+                    <span className="route-option-title">{index === 0 ? 'Fastest route' : `Alternate ${index}`}</span>
                     <span className="route-option-subtitle">
                       {option.stopsCount} {option.stopsCount === 1 ? 'stop' : 'stops'} •{' '}
-                      {option.distanceKm.toFixed(2)} km
+                      {option.distanceKm.toFixed(2)} km{Number.isFinite(fare) ? ` • ₹${fare}` : ''}
                     </span>
                   </div>
                   <div className="route-option-legs">
@@ -127,14 +151,14 @@ function StationSelector({
         </div>
       )}
 
-      <button className="action-button" type="button" disabled={!canStart} onClick={onStart}>
-        Start Journey
+      <button className="action-button" type="button" disabled={!canStart || isLoading} onClick={onStart}>
+        <span>Start live journey</span><span aria-hidden="true">→</span>
       </button>
 
-      <p className="hint">
-        You will hear a gentle alert and feel a vibration when you are one stop or 500 m away from
-        your destination.
-      </p>
+      <div className="planner-footnote">
+        <span aria-hidden="true">◉</span>
+        <p>{notificationsEnabled ? 'Station alerts are ready.' : 'Starting asks for notification access.'} You will be warned one stop before arrival.</p>
+      </div>
     </section>
   );
 }
